@@ -88,16 +88,15 @@ function App() {
         return;
       }
 
-      const valuesToLookFor = Object.values(
-        definitions.DestinyPlugSetDefinition
-      ).map((def) => {
-        return {
-          value: uint32ToArray(def.hash),
-          description: `PlugSet ${def.hash}`,
-        };
-      });
-
-      console.log(valuesToLookFor);
+      const valuesToLookFor = Object.entries(definitions).flatMap(
+        ([tableName, definitions]) =>
+          Object.values(definitions).map((def: any) => {
+            return {
+              value: uint32ToArray(def.hash),
+              description: `${tableName} ${def.hash}`,
+            };
+          })
+      );
 
       const startOffset = props.overscanStartIndex * 16;
       const endOffset = props.overscanStopIndex * 16;
@@ -115,12 +114,12 @@ function App() {
       });
 
       rangesRef.current = foundIndexes;
-      console.log(
-        `[onItemsRendered] startOffset: ${hex(startOffset)} \t endOffset: ${hex(
-          endOffset
-        )} \t foundIndexes:`,
-        foundIndexes
-      );
+      // console.log(
+      //   `[onItemsRendered] startOffset: ${hex(startOffset)} \t endOffset: ${hex(
+      //     endOffset
+      //   )} \t foundIndexes:`,
+      //   foundIndexes
+      // );
     },
     [definitions]
   );
@@ -138,14 +137,14 @@ function App() {
     }
 
     if (offset === matchedRange.start) {
-      return withClassName(element, "range-begin");
+      return withClassName(element, "range range-begin");
     }
 
     if (offset === matchedRange.end) {
-      return withClassName(element, "range-end");
+      return withClassName(element, "range range-end");
     }
 
-    return withClassName(element, "range-mid");
+    return withClassName(element, "range range-mid");
   }
 
   const onSelectionChanged = useCallback(
@@ -154,12 +153,6 @@ function App() {
       const matchedRanges = rangesRef.current.filter(
         (v) => selectionStart >= v.start && selectionEnd <= v.end
       );
-
-      console.log("onSelectionChanged", {
-        selectionStart,
-        selectionEnd,
-        matchedRanges,
-      });
 
       setSelectedRoi(matchedRanges);
     },
@@ -193,6 +186,7 @@ function App() {
               showColumnLabels
               showRowLabels
               readOnly
+              // overscanCount={5}
             />
           )}
         </div>
