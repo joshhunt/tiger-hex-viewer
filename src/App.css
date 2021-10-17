@@ -1,0 +1,57 @@
+.App {
+}
+
+.parent {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+}
+
+.drop {
+  background: #ecf0f1;
+  padding: 8px;
+}
+
+.fileMeta:not(:empty) {
+  padding: 8px;
+  background: #bdc3c7;
+  font: 16px monospace;
+}
+
+.main {
+  background: #bdc3c7;
+  display: grid;
+  grid-template-columns: auto 1fr;
+}
+
+.hexViewer {
+  background: #d35400;
+}
+
+.hexAccessory {
+  padding: 16px;
+}
+
+.range-begin {
+  background: #3498db !important;
+  /* border: 2px none #3498db; */
+  /* border-style: solid none solid solid; */
+  border-radius: 5px 0 0 5px;
+}
+
+.range-mid {
+  background: #3498db !important;
+  /* border: 2px none #3498db; */
+  /* border-style: solid none solid none; */
+}
+
+.range-end {
+  background: #3498db !important;
+  /* border: 2px none #3498db; */
+  /* border-style: solid solid solid none; */
+  border-radius: 0 5px 5px 0;
+}
+
+/* .range-begin * {
+  background: none !important;
+} */
