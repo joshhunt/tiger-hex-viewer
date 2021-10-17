@@ -18,7 +18,7 @@ import {
 import hexEditorTheme from "./hexEditorTheme";
 import { ListOnItemsRenderedProps } from "react-window";
 import getDefinitions from "./lib/definitions";
-import { uint32ToArray } from "./lib/dataUtils";
+import { hex, uint32ToArray } from "./lib/dataUtils";
 
 interface FileMeta {
   fileName: string;
@@ -99,8 +99,8 @@ function App() {
 
       console.log(valuesToLookFor);
 
-      const startOffset = props.overscanStartIndex * 0x0f;
-      const endOffset = props.overscanStopIndex * 0x0f;
+      const startOffset = props.overscanStartIndex * 16;
+      const endOffset = props.overscanStopIndex * 16;
       const visibleSlice = fileDataRef.current.slice(startOffset, endOffset);
 
       const foundIndexes: RangeOfInterest[] = valuesToLookFor.flatMap((v) => {
@@ -108,14 +108,19 @@ function App() {
 
         return foundRanges.map(([start, end]) => ({
           start: start + startOffset,
-          end,
+          end: end + startOffset,
           value: v.value,
           description: v.description,
         }));
       });
 
       rangesRef.current = foundIndexes;
-      console.log("onItemsRendered", { startOffset, endOffset, foundIndexes });
+      console.log(
+        `[onItemsRendered] startOffset: ${hex(startOffset)} \t endOffset: ${hex(
+          endOffset
+        )} \t foundIndexes:`,
+        foundIndexes
+      );
     },
     [definitions]
   );
@@ -186,6 +191,7 @@ function App() {
               renderByte={renderByte}
               onSelectionChanged={onSelectionChanged}
               showColumnLabels
+              showRowLabels
               readOnly
             />
           )}
