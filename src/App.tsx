@@ -1,4 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { AllDestinyManifestComponents } from "bungie-api-ts/destiny2";
 import { useDropzone } from "react-dropzone";
 import cx from "classnames";
 
@@ -10,6 +17,8 @@ import {
 } from "./components/ReactHexEditor/types";
 import hexEditorTheme from "./hexEditorTheme";
 import { ListOnItemsRenderedProps } from "react-window";
+import getDefinitions from "./lib/definitions";
+import { uint32ToArray } from "./lib/dataUtils";
 
 interface FileMeta {
   fileName: string;
@@ -33,79 +42,83 @@ function App() {
 
   const [nonce, setNonce] = useState(0);
   const [fileMeta, setFileMeta] = useState<FileMeta>();
+  const [definitions, setDefinitions] =
+    useState<AllDestinyManifestComponents>();
+
+  const definitionsLoaded = useMemo(
+    () => definitions && Object.keys(definitions).length > 1,
+    [definitions]
+  );
 
   useEffect(() => {
-    setInterval(() => {
-      setNonce((v) => v + 1);
-    }, 1 * 1000);
+    getDefinitions()
+      .then((d) => setDefinitions(d))
+      .catch(console.error);
   }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const [file] = acceptedFiles;
     if (!file) return;
 
-    setFileMeta({
-      fileName: file.name,
-    });
+    setFileMeta({ fileName: file.name });
 
-    console.log("Dropped files", acceptedFiles);
     const fileReader = new FileReader();
     fileReader.readAsArrayBuffer(file);
 
     fileReader.onload = function (evt) {
-      if (evt.target instanceof FileReader) {
-        const data = evt.target.result;
+      if (!(evt.target instanceof FileReader)) return;
+      if (!(evt.target.result instanceof ArrayBuffer)) return;
 
-        if (data instanceof ArrayBuffer) {
-          const uint8Array = new Uint8Array(data);
-          console.log("Setting file data ref to", uint8Array);
-          // setFileData(uint8Array);
-          fileDataRef.current = uint8Array;
-          setNonce((v) => v + 1);
-        }
-      }
+      fileDataRef.current = new Uint8Array(evt.target.result);
+      setNonce((v) => v + 1);
     };
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
-  const noopSetValue = React.useCallback((offset, value) => {}, []);
+  const onItemsRendered = useCallback(
+    (props: ListOnItemsRenderedProps) => {
+      if (!fileDataRef.current) {
+        console.warn("Don't have fileDataRef in onItemsRendered");
+        return;
+      }
 
-  const onItemsRendered = useCallback((props: ListOnItemsRenderedProps) => {
-    if (!fileDataRef.current) {
-      console.log("onItemsRendered returning early");
-      return;
-    }
+      if (!definitions) {
+        console.warn("Don't have definitions in onItemsRendered");
+        return;
+      }
 
-    const values = [
-      {
-        value: [0xb8, 0xb5, 0xf5, 0xe4],
-        description: "a plug item hash",
-      },
-      {
-        value: [0xb8, 0xb5, 0xf5],
-        description: "a second plug item hash",
-      },
-    ];
+      const valuesToLookFor = Object.values(
+        definitions.DestinyPlugSetDefinition
+      ).map((def) => {
+        return {
+          value: uint32ToArray(def.hash),
+          description: `PlugSet ${def.hash}`,
+        };
+      });
 
-    const startOffset = props.visibleStartIndex * 0x0f;
-    const endOffset = props.visibleStopIndex * 0x0f;
-    const visibleSlice = fileDataRef.current.slice(startOffset, endOffset);
+      console.log(valuesToLookFor);
 
-    const foundIndexes: RangeOfInterest[] = values.flatMap((v) => {
-      const foundRanges = findSubArray(visibleSlice, v.value);
+      const startOffset = props.overscanStartIndex * 0x0f;
+      const endOffset = props.overscanStopIndex * 0x0f;
+      const visibleSlice = fileDataRef.current.slice(startOffset, endOffset);
 
-      return foundRanges.map(([start, end]) => ({
-        start,
-        end,
-        value: v.value,
-        description: v.description,
-      }));
-    });
+      const foundIndexes: RangeOfInterest[] = valuesToLookFor.flatMap((v) => {
+        const foundRanges = findSubArray(visibleSlice, v.value);
 
-    rangesRef.current = foundIndexes;
-    console.log("onItemsRendered", { startOffset, endOffset, foundIndexes });
-  }, []);
+        return foundRanges.map(([start, end]) => ({
+          start,
+          end,
+          value: v.value,
+          description: v.description,
+        }));
+      });
+
+      rangesRef.current = foundIndexes;
+      console.log("onItemsRendered", { startOffset, endOffset, foundIndexes });
+    },
+    [definitions]
+  );
 
   function renderByte({ offset, element, value }: RenderByteProps) {
     const matchedRanges = rangesRef.current.filter(
@@ -163,12 +176,11 @@ function App() {
 
       <div className="main">
         <div className="hexViewer">
-          {fileDataRef.current && (
+          {definitionsLoaded && fileDataRef.current && (
             <HexEditor
               columns={0x10}
               data={fileDataRef.current}
               nonce={nonce}
-              onSetValue={noopSetValue}
               theme={{ hexEditor: hexEditorTheme }}
               onItemsRendered={onItemsRendered}
               renderByte={renderByte}
@@ -180,9 +192,13 @@ function App() {
         </div>
 
         <div className="hexAccessory">
-          {selectedRoi.length > 0 && (
-            <pre>{JSON.stringify(selectedRoi, null, 2)}</pre>
-          )}
+          {!definitionsLoaded && <div>Definitions loading...</div>}
+
+          <div>
+            {selectedRoi.length > 0 && (
+              <pre>{JSON.stringify(selectedRoi, null, 2)}</pre>
+            )}
+          </div>
         </div>
       </div>
     </div>

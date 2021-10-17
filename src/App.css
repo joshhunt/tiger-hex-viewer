@@ -1,6 +1,3 @@
-.App {
-}
-
 .parent {
   height: 100vh;
   display: grid;
@@ -29,7 +26,7 @@
 }
 
 .hexAccessory {
-  padding: 16px;
+  padding: 8px;
 }
 
 .range-begin {
