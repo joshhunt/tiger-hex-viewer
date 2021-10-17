@@ -107,7 +107,7 @@ function App() {
         const foundRanges = findSubArray(visibleSlice, v.value);
 
         return foundRanges.map(([start, end]) => ({
-          start,
+          start: start + startOffset,
           end,
           value: v.value,
           description: v.description,
