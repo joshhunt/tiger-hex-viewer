@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import cx from "classnames";
 
@@ -33,6 +33,12 @@ function App() {
 
   const [nonce, setNonce] = useState(0);
   const [fileMeta, setFileMeta] = useState<FileMeta>();
+
+  useEffect(() => {
+    setInterval(() => {
+      setNonce((v) => v + 1);
+    }, 1 * 1000);
+  }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const [file] = acceptedFiles;
@@ -75,6 +81,10 @@ function App() {
       {
         value: [0xb8, 0xb5, 0xf5, 0xe4],
         description: "a plug item hash",
+      },
+      {
+        value: [0xb8, 0xb5, 0xf5],
+        description: "a second plug item hash",
       },
     ];
 
@@ -120,23 +130,23 @@ function App() {
     return withClassName(element, "range-mid");
   }
 
-  function onSelectionChanged({
-    selectionStart,
-    selectionEnd,
-  }: SelectionChangedProps) {
-    // TODO: probably doesnt work too much when an actual range has been selected
-    const matchedRanges = rangesRef.current.filter(
-      (v) => selectionStart >= v.start && selectionEnd <= v.end
-    );
+  const onSelectionChanged = useCallback(
+    ({ selectionStart, selectionEnd }: SelectionChangedProps) => {
+      // TODO: probably doesnt work too much when an actual range has been selected
+      const matchedRanges = rangesRef.current.filter(
+        (v) => selectionStart >= v.start && selectionEnd <= v.end
+      );
 
-    console.log("onSelectionChanged", {
-      selectionStart,
-      selectionEnd,
-      matchedRanges,
-    });
+      console.log("onSelectionChanged", {
+        selectionStart,
+        selectionEnd,
+        matchedRanges,
+      });
 
-    setSelectedRoi(matchedRanges);
-  }
+      setSelectedRoi(matchedRanges);
+    },
+    []
+  );
 
   return (
     <div className="parent">

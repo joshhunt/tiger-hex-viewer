@@ -288,7 +288,7 @@ const HexEditor: React.RefForwardingComponent<HexEditorHandle, HexEditorProps> =
           // shrug
         }
       },
-      [focus, data.length]
+      [focus, onSelectionChanged, data.length]
     );
 
     useEffect(() => {
